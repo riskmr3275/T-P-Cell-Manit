@@ -69,7 +69,7 @@ exports.otpMail=(otp)=>{
             <p class="message">To complete your login, please use the following One-Time Password (OTP):</p>
             <div class="otp">${otp}</div> <!-- Replace with dynamic OTP -->
             <p class="message">This OTP is valid for the next 10 minutes. If you did not request this, please ignore this email.</p>
-            <a href="https://www.google.com" class="button">Visit T&P cell MANIT</a>
+            <a href="https://www.google.com" class="button">Visit T&P cell</a>
         </div>
         <div class="footer">
             © 2024 T&P Cell MANIT. All rights reserved. Hostel 9 Manit Bhopal, Bhopal(Madhya Pradesh)

@@ -2,9 +2,9 @@ const bcrypt = require('bcryptjs');
 const otpGenerate = require("otp-generator")
 const jwt = require("jsonwebtoken")
 const mailSender = require("../utils/mailSender")
-const {otpMail} = require("../Mail/Template/Otpmail")
+const { otpMail } = require("../Mail/Template/Otpmail")
 const { connect } = require('../config/database');
-
+const {AccoutCreate} =require("../Mail/Template/AccountCreation")
 // +++++++++++++++++++++++++++++++++++Send Otp FUnction+++++++++++++++++++++++++++++++
 exports.sendOtp = async (req, res) => {
     const { email } = req.body;
@@ -19,9 +19,11 @@ exports.sendOtp = async (req, res) => {
         }
 
         // Check if the email is already registered
-        const [userRows] = await connection.query('SELECT COUNT(*) AS count FROM student_details WHERE s_email = ?', [email]);
+        // Destructuring: The result of the query is an array where the first element contains the query result.
+        // Here, userRows will be an object like { count: 2 }, indicating that there are 2 rows with the email 'john@example.com'.
+        const[userRows] = await connection.query('SELECT COUNT(*) AS count FROM student_details WHERE s_email = ?', [email]);
         console.log("User Rows: ", userRows);
-        
+
         if (userRows[0].count > 0) {
             await connection.end();
             return res.status(200).json({
@@ -43,9 +45,9 @@ exports.sendOtp = async (req, res) => {
         } while (otpRows[0].count > 0);
 
         // Store OTP in the database
-        const otps=await connection.query('INSERT INTO otps (email, otp, created_at) VALUES (?, ?, NOW())', [email, otp]);
-        console.log("Otp Request from Backend",otps);
-        
+        const otps = await connection.query('INSERT INTO otps (email, otp, created_at) VALUES (?, ?, NOW())', [email, otp]);
+        console.log("Otp Request from Backend", otps);
+
 
         // Close the connection
         await connection.end();
@@ -86,17 +88,17 @@ exports.sendOtp = async (req, res) => {
 exports.signup = async (req, res) => {
     try {
         const {
+            scholar_id,
             firstName,
             lastName,
             email,
             password,
             confirmPassword,
             accountType,
-            otp,
-            contactNumber
+            otp
         } = req.body;
 
-        if (!firstName || !lastName || !email || !password || !confirmPassword || !accountType || !otp || !contactNumber) {
+        if (!firstName || !lastName || !email || !password || !confirmPassword || !accountType || !otp||!scholar_id ) {
             return res.status(403).json({
                 success: false,
                 message: "All fields are required"
@@ -113,7 +115,9 @@ exports.signup = async (req, res) => {
         const connection = await connect();
 
         // Check if the user already exists
-        const [existingUserRows] = await connection.execute('SELECT COUNT(*) AS count FROM users WHERE email = ?', [email]);
+        const [existingUserRows] = await connection.execute('SELECT COUNT(*) AS count FROM student_details WHERE s_email = ?', [email]);
+        // console.log(existingUserRows[0].count);
+        
         if (existingUserRows[0].count > 0) {
             await connection.end();
             return res.status(400).json({
@@ -121,7 +125,7 @@ exports.signup = async (req, res) => {
                 message: "User is already registered"
             });
         }
-
+     
         // Validate OTP
         const [recentOtpRows] = await connection.execute('SELECT otp FROM otps WHERE email = ? ORDER BY created_at DESC LIMIT 1', [email]);
         if (recentOtpRows.length === 0 || otp !== recentOtpRows[0].otp) {
@@ -134,20 +138,23 @@ exports.signup = async (req, res) => {
 
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Create profile details
-        const [profileResult] = await connection.execute('INSERT INTO profiles (gender, dateOfBirth, about, contactNumber) VALUES (?, ?, ?, ?)', [null, null, null, null]);
-        const profileId = profileResult.insertId;
-
         // Create user
-        const [userResult] = await connection.execute('INSERT INTO users (firstName, lastName, email, contactNumber, password, accountType, additionalDetails, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [firstName, lastName, email, contactNumber, hashedPassword, accountType, profileId, `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`]);
-
+        await connection.execute('INSERT INTO student_details (s_id,s_firstName, s_lastName, s_email, s_pass, accountType, s_photo_url) VALUES (?,?, ?, ?, ?, ?, ?)', [scholar_id,firstName, lastName, email, hashedPassword, accountType, `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`]);
+        
+        const [allDetails]=await connection.execute('SELECT *  FROM student_details WHERE s_email = ?', [email])
+         // Sending email with OTP
+         try {
+            const mailResponse = await mailSender(email, "You're In! Welcome to Manit", AccoutCreate(firstName));
+            console.log("Email sent successfully:", mailResponse);
+        } catch (error) {
+            console.log("Error occurred while sending the email:", error);
+        }
         await connection.end();
 
         return res.status(200).json({
             success: true,
             message: "User registered successfully",
-            user: { id: userResult.insertId, firstName, lastName, email, contactNumber, accountType }
+            student_Details: allDetails[0]
         });
     } catch (error) {
         console.error("Error signing up:", error);
@@ -163,7 +170,7 @@ exports.signup = async (req, res) => {
 
 
 
- 
+
 
 // Login function
 exports.login = async (req, res) => {
