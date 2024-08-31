@@ -7,14 +7,14 @@ const {
   login,
   signup,
   sendOtp,
-  changePassword,
+  changePassword
 } = require("../controllers/Auth")
 // const {
 //   resetPasswordToken,
 //   resetPassword,
 // } = require("../controllers/ResetPassword")
 
-// const { auth } = require("../middlewares/auth")
+const { auth,isCompany,isStudent,isTPR } = require("../middlewares/auth")
 
 // const {
 //   getUserDetails,
@@ -27,17 +27,17 @@ const {
 // // Route for get the Subscription details
 // router.post("/getUserSubscriptionDetails", auth, getUserSubscriptionDetails)
 
-// // Route for user login
-// router.post("/login", login)
+// Route for user login
+router.post("/login", login)
 
 // // Route for user signup
 router.post("/signup", signup)
 
-// // Route for sending OTP to the user's email
+// Route for sending OTP to the user's email
 router.post("/sendotp", sendOtp)
 
 // // Route for Changing the password
-// router.post("/changepassword", auth, changePassword)
+router.post("/changepassword", auth, changePassword)
 
 // // Route for generating a reset password token
 // router.post("/reset-password-token", resetPasswordToken)

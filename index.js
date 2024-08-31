@@ -1,30 +1,33 @@
 const express = require('express');
-const cookieParser=require('cookie-parser')
-const database =require("./config/database")
+const cookieParser = require('cookie-parser');
+const database = require("./config/database");
 require('dotenv').config();
-const userRoutes=require("./routes/User")
- 
-// const planRoutes = require('./routes/planRoutes');
- 
-const cors=require("cors")
+const userRoutes = require("./routes/User");
+const { cloudinaryConnect } = require("./config/cloudinary");
+const fileUpload = require("express-fileupload");
+const companyRoutes = require("./routes/company");
+const cors = require("cors");
+
 const app = express();
 
 database.connect();
-
+app.use(fileUpload({
+    useTempFiles: true,
+    tempFileDir: "/tmp"
+}));
+cloudinaryConnect();
 app.use(express.json());
-app.use(cookieParser())
-// app.use('/api', introductionRoutes);
-// app.use('/api', planRoutes);
-app.use('/api/auth',userRoutes)
-// app.use('/api', paymentOptionRoutes);
-// app.use('/api', termsRoutes);
+app.use(cookieParser());
 
-app.get("/",(req,res)=>{
+app.use('/api/auth', userRoutes);
+app.use('/api/auth', companyRoutes);
+
+app.get("/", (req, res) => {
     return res.json({
-        success:true,
-        message:"Your server is up and running.............."
-    })
-})
+        success: true,
+        message: "Your server is up and running.............."
+    });
+});
 
 const PORT = process.env.PORT || 4000;
 
