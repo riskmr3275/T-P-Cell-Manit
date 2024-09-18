@@ -80,12 +80,12 @@ exports.isCompany = async (req, res, next) => {
 // ++++++++++++++++++isAdmin++++++++++++++++++
 
 
-exports.isTPR = async (req, res, next) => {
+exports.isAdmin = async (req, res, next) => {
     try {
-        if (req.user.accountType !== "TPR") {
+        if (req.user.accountType !== "Admin") {
             return res.status(401).json({
                 success: false,
-                message: "This is protected route for TPR only"
+                message: "This is protected route for Admin only"
             });
         }
         next();
